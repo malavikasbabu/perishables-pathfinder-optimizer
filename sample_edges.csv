@@ -1,0 +1,11 @@
+
+from,to,distance_km,travel_time_hr,cost
+Factory1,ColdStorage,12,1.5,500
+Factory1,Warehouse1,18,2.2,650
+ColdStorage,Retail1,8,1,350
+ColdStorage,Warehouse1,7,0.8,300
+Warehouse1,Retail1,6,0.7,250
+Warehouse1,Retail2,9,1.1,400
+Factory2,Distribution1,15,1.8,550
+Distribution1,Retail2,10,1.2,450
+Factory2,ColdStorage,20,2.5,700

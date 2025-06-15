@@ -1,0 +1,9 @@
+
+name,type,x,y,capacity,perishability_hours
+Factory1,source,0,0,10000,
+ColdStorage,intermediate,10,5,5000,6
+Warehouse1,intermediate,15,8,8000,12
+Retail1,customer,20,10,,24
+Retail2,customer,25,12,,24
+Factory2,source,5,15,12000,
+Distribution1,intermediate,18,18,6000,8
