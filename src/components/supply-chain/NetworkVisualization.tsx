@@ -31,9 +31,9 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
     ctx.clearRect(0, 0, rect.width, rect.height);
 
     if (nodes.length === 0) {
-      // Draw placeholder text with better styling
+      // Draw placeholder text
       ctx.fillStyle = '#6B7280';
-      ctx.font = 'bold 18px Arial';
+      ctx.font = '18px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('Add nodes to see network visualization', rect.width / 2, rect.height / 2);
@@ -52,15 +52,15 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
     const maxY = Math.max(...yCoords);
 
     // Add padding and scale to canvas
-    const padding = 80;
+    const padding = 100;
     const scaleX = (rect.width - 2 * padding) / (maxX - minX || 1);
     const scaleY = (rect.height - 2 * padding) / (maxY - minY || 1);
-    const scale = Math.min(scaleX, scaleY, 1.5); // Limit maximum scale
+    const scale = Math.min(scaleX, scaleY, 2);
 
     const transformX = (x: number) => padding + (x - minX) * scale;
     const transformY = (y: number) => padding + (y - minY) * scale;
 
-    // Draw edges first (so they appear behind nodes)
+    // Draw edges first
     edges.forEach(edge => {
       const fromNode = nodes.find(n => n.name === edge.from);
       const toNode = nodes.find(n => n.name === edge.to);
@@ -71,9 +71,9 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
         const x2 = transformX(toNode.x);
         const y2 = transformY(toNode.y);
 
-        // Draw arrow line with better styling
+        // Draw arrow line
         ctx.strokeStyle = '#374151';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -81,8 +81,8 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
 
         // Draw arrowhead
         const angle = Math.atan2(y2 - y1, x2 - x1);
-        const arrowLength = 15;
-        const arrowAngle = Math.PI / 5;
+        const arrowLength = 12;
+        const arrowAngle = Math.PI / 6;
 
         ctx.fillStyle = '#374151';
         ctx.beginPath();
@@ -98,23 +98,21 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
         ctx.closePath();
         ctx.fill();
 
-        // Draw edge label (cost) with better positioning and styling
+        // Draw cost label
         const midX = (x1 + x2) / 2;
         const midY = (y1 + y2) / 2;
         
-        // Add background rectangle for cost label
         const costText = `₹${edge.cost}`;
-        ctx.font = 'bold 12px Arial';
+        ctx.font = '12px Arial';
         const textMetrics = ctx.measureText(costText);
         const textWidth = textMetrics.width;
-        const textHeight = 16;
         
+        // Background for cost
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(midX - textWidth/2 - 4, midY - textHeight/2 - 2, textWidth + 8, textHeight + 4);
-        
+        ctx.fillRect(midX - textWidth/2 - 3, midY - 8, textWidth + 6, 16);
         ctx.strokeStyle = '#E5E7EB';
         ctx.lineWidth = 1;
-        ctx.strokeRect(midX - textWidth/2 - 4, midY - textHeight/2 - 2, textWidth + 8, textHeight + 4);
+        ctx.strokeRect(midX - textWidth/2 - 3, midY - 8, textWidth + 6, 16);
         
         ctx.fillStyle = '#111827';
         ctx.textAlign = 'center';
@@ -123,40 +121,21 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
       }
     });
 
-    // Draw nodes with improved styling
+    // Draw nodes
     nodes.forEach(node => {
       const x = transformX(node.x);
       const y = transformY(node.y);
-      const radius = 35;
+      const radius = 40;
 
-      // Node color based on type
-      let nodeColor = '#3B82F6'; // blue for source
-      let nodeColorLight = '#DBEAFE';
-      if (node.type === 'intermediate') {
-        nodeColor = '#F59E0B'; // amber
-        nodeColorLight = '#FEF3C7';
-      }
-      if (node.type === 'customer') {
-        nodeColor = '#10B981'; // emerald
-        nodeColorLight = '#D1FAE5';
-      }
+      // Node colors
+      let nodeColor = '#3B82F6';
+      if (node.type === 'intermediate') nodeColor = '#F59E0B';
+      if (node.type === 'customer') nodeColor = '#10B981';
 
-      // Draw node shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.beginPath();
-      ctx.arc(x + 2, y + 2, radius, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Draw node background circle
-      ctx.fillStyle = nodeColorLight;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Draw node main circle
+      // Draw node circle
       ctx.fillStyle = nodeColor;
       ctx.beginPath();
-      ctx.arc(x, y, radius - 5, 0, 2 * Math.PI);
+      ctx.arc(x, y, radius, 0, 2 * Math.PI);
       ctx.fill();
 
       // Draw node border
@@ -164,51 +143,74 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
       ctx.lineWidth = 3;
       ctx.stroke();
 
-      // Draw node label with better typography
+      // Draw node name (center of circle)
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 14px Arial';
+      ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(node.name, x, y - 2);
-
-      // Draw node type below with improved styling
-      ctx.fillStyle = '#1F2937';
-      ctx.font = 'bold 12px Arial';
-      ctx.textBaseline = 'top';
       
-      // Capitalize and format type text
-      const typeText = node.type.charAt(0).toUpperCase() + node.type.slice(1);
-      ctx.fillText(typeText, x, y + radius + 8);
+      // Split long names into multiple lines
+      const maxWidth = radius * 1.5;
+      const words = node.name.split(' ');
+      let lines = [];
+      let currentLine = words[0];
+      
+      for (let i = 1; i < words.length; i++) {
+        const testLine = currentLine + ' ' + words[i];
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth) {
+          lines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      lines.push(currentLine);
+      
+      // Draw text lines
+      const lineHeight = 14;
+      const startY = y - (lines.length - 1) * lineHeight / 2;
+      lines.forEach((line, index) => {
+        ctx.fillText(line, x, startY + index * lineHeight);
+      });
 
-      // Add capacity info if available
+      // Draw node type below the circle
+      ctx.fillStyle = '#1F2937';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const typeText = node.type.charAt(0).toUpperCase() + node.type.slice(1);
+      ctx.fillText(typeText, x, y + radius + 10);
+
+      // Draw capacity if available
       if (node.capacity) {
         ctx.font = '10px Arial';
         ctx.fillStyle = '#6B7280';
-        ctx.fillText(`Cap: ${node.capacity}`, x, y + radius + 25);
+        ctx.fillText(`Capacity: ${node.capacity}`, x, y + radius + 25);
       }
     });
   }, [nodes, edges]);
 
   return (
     <div className="space-y-6">
-      {/* Legend with improved styling */}
-      <div className="flex justify-center gap-8 text-sm bg-white p-4 rounded-lg border shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-sm"></div>
-          <span className="font-medium text-gray-700">Source</span>
+      {/* Legend */}
+      <div className="flex justify-center gap-6 text-sm bg-white p-4 rounded-lg border">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+          <span>Source</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-amber-500 border-2 border-white shadow-sm"></div>
-          <span className="font-medium text-gray-700">Intermediate</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+          <span>Intermediate</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-emerald-500 border-2 border-white shadow-sm"></div>
-          <span className="font-medium text-gray-700">Customer</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-emerald-500"></div>
+          <span>Customer</span>
         </div>
       </div>
 
-      {/* Canvas with improved styling */}
-      <div className="border-2 border-gray-200 rounded-xl bg-gradient-to-br from-gray-50 to-white shadow-lg overflow-hidden">
+      {/* Canvas */}
+      <div className="border rounded-lg bg-white">
         <canvas
           ref={canvasRef}
           className="w-full block"
@@ -216,24 +218,24 @@ const NetworkVisualization = ({ nodes, edges }: NetworkVisualizationProps) => {
         />
       </div>
 
-      {/* Network Statistics with improved design */}
+      {/* Statistics */}
       {nodes.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 text-center">
-            <div className="text-3xl font-bold text-blue-700 mb-1">{nodes.filter(n => n.type === 'source').length}</div>
-            <div className="text-sm font-medium text-blue-800 uppercase tracking-wide">Sources</div>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-blue-600">{nodes.filter(n => n.type === 'source').length}</div>
+            <div className="text-sm text-blue-800">Sources</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200 text-center">
-            <div className="text-3xl font-bold text-amber-700 mb-1">{nodes.filter(n => n.type === 'intermediate').length}</div>
-            <div className="text-sm font-medium text-amber-800 uppercase tracking-wide">Intermediates</div>
+          <div className="bg-amber-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-amber-600">{nodes.filter(n => n.type === 'intermediate').length}</div>
+            <div className="text-sm text-amber-800">Intermediates</div>
           </div>
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200 text-center">
-            <div className="text-3xl font-bold text-emerald-700 mb-1">{nodes.filter(n => n.type === 'customer').length}</div>
-            <div className="text-sm font-medium text-emerald-800 uppercase tracking-wide">Customers</div>
+          <div className="bg-emerald-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-emerald-600">{nodes.filter(n => n.type === 'customer').length}</div>
+            <div className="text-sm text-emerald-800">Customers</div>
           </div>
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 text-center">
-            <div className="text-3xl font-bold text-gray-700 mb-1">{edges.length}</div>
-            <div className="text-sm font-medium text-gray-800 uppercase tracking-wide">Connections</div>
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-gray-600">{edges.length}</div>
+            <div className="text-sm text-gray-800">Connections</div>
           </div>
         </div>
       )}
