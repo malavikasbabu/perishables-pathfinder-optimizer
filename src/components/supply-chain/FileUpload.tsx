@@ -21,6 +21,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     if (lines.length < 2) return [];
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    console.log('CSV Headers found:', headers);
     const data = [];
     
     for (let i = 1; i < lines.length; i++) {
@@ -30,6 +31,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         const value = values[index]?.trim() || '';
         row[header] = value;
       });
+      console.log(`Row ${i + 1} data:`, row);
       data.push(row);
     }
     
@@ -41,10 +43,18 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
+      console.log(`Validating node row ${i + 2}:`, row);
       
-      // Check required fields
-      if (!row.name || !row.type || row.x === undefined || row.y === undefined) {
-        throw new Error(`Row ${i + 2}: Missing required fields (name, type, x, y)`);
+      // Log which fields are missing
+      const missingFields = [];
+      if (!row.name) missingFields.push('name');
+      if (!row.type) missingFields.push('type');
+      if (row.x === undefined || row.x === '') missingFields.push('x');
+      if (row.y === undefined || row.y === '') missingFields.push('y');
+      
+      if (missingFields.length > 0) {
+        console.error(`Row ${i + 2} missing fields:`, missingFields);
+        throw new Error(`Row ${i + 2}: Missing required fields (${missingFields.join(', ')})`);
       }
       
       // Validate type
@@ -56,6 +66,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       const x = parseFloat(row.x);
       const y = parseFloat(row.y);
       if (isNaN(x) || isNaN(y)) {
+        console.error(`Row ${i + 2} coordinate parsing:`, { x: row.x, y: row.y, parsedX: x, parsedY: y });
         throw new Error(`Row ${i + 2}: Invalid coordinates`);
       }
       
@@ -70,6 +81,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
           parseFloat(row.perishability_hours || row.perishabilityhours) : undefined
       };
       
+      console.log(`Successfully created node:`, node);
       nodes.push(node);
     }
     
@@ -81,11 +93,27 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
+      console.log(`Validating edge row ${i + 2}:`, row);
       
-      // Check required fields
-      if (!row.from || !row.to || row.distance_km === undefined || 
-          row.travel_time_hr === undefined || row.cost === undefined) {
-        throw new Error(`Row ${i + 2}: Missing required fields (from, to, distance_km, travel_time_hr, cost)`);
+      // Log which fields are missing
+      const missingFields = [];
+      if (!row.from) missingFields.push('from');
+      if (!row.to) missingFields.push('to');
+      if (row.distance_km === undefined || row.distance_km === '') {
+        if (row.distancekm === undefined || row.distancekm === '') {
+          missingFields.push('distance_km');
+        }
+      }
+      if (row.travel_time_hr === undefined || row.travel_time_hr === '') {
+        if (row.traveltimehr === undefined || row.traveltimehr === '') {
+          missingFields.push('travel_time_hr');
+        }
+      }
+      if (row.cost === undefined || row.cost === '') missingFields.push('cost');
+      
+      if (missingFields.length > 0) {
+        console.error(`Row ${i + 2} missing fields:`, missingFields);
+        throw new Error(`Row ${i + 2}: Missing required fields (${missingFields.join(', ')})`);
       }
       
       // Validate node names exist
@@ -102,12 +130,15 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       const cost = parseFloat(row.cost);
       
       if (isNaN(distanceKm) || distanceKm <= 0) {
+        console.error(`Row ${i + 2} distance parsing:`, { distance_km: row.distance_km, distancekm: row.distancekm, parsed: distanceKm });
         throw new Error(`Row ${i + 2}: Invalid distance`);
       }
       if (isNaN(travelTimeHr) || travelTimeHr <= 0) {
+        console.error(`Row ${i + 2} travel time parsing:`, { travel_time_hr: row.travel_time_hr, traveltimehr: row.traveltimehr, parsed: travelTimeHr });
         throw new Error(`Row ${i + 2}: Invalid travel time`);
       }
       if (isNaN(cost) || cost <= 0) {
+        console.error(`Row ${i + 2} cost parsing:`, { cost: row.cost, parsed: cost });
         throw new Error(`Row ${i + 2}: Invalid cost`);
       }
       
@@ -120,6 +151,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         cost
       };
       
+      console.log(`Successfully created edge:`, edge);
       edges.push(edge);
     }
     
@@ -136,13 +168,19 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       let nodesData: any[] = [];
       let edgesData: any[] = [];
       
+      console.log('Processing files:', Array.from(files).map(f => f.name));
+      
       for (const file of files) {
+        console.log(`Processing file: ${file.name}`);
         const text = await file.text();
+        console.log(`File content preview:`, text.substring(0, 200));
         const data = parseCSV(text);
         
         if (file.name.toLowerCase().includes('node')) {
+          console.log('Identified as nodes file');
           nodesData = data;
         } else if (file.name.toLowerCase().includes('edge')) {
+          console.log('Identified as edges file');
           edgesData = data;
         }
       }
@@ -155,6 +193,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         throw new Error('No edges data found. Please upload a file with "edge" in its name.');
       }
       
+      console.log('Starting validation...');
       const nodes = validateNodesData(nodesData);
       const nodeNames = nodes.map(n => n.name);
       const edges = validateEdgesData(edgesData, nodeNames);
@@ -167,6 +206,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       });
       
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "Upload Error",
         description: error instanceof Error ? error.message : "Failed to process files",
@@ -232,7 +272,6 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         </Card>
       </div>
 
-      {/* Upload Section */}
       <Card>
         <CardHeader>
           <CardTitle>Upload Files</CardTitle>
