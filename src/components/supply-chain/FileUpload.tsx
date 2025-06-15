@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Upload, FileText, AlertCircle } from "lucide-react";
 import { Node, Edge } from "@/pages/Index";
 import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 interface FileUploadProps {
   onFileUpload: (nodes: Node[], edges: Edge[]) => void;
@@ -16,26 +16,62 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const parseCSV = (csvText: string): any[] => {
-    const lines = csvText.trim().split('\n');
-    if (lines.length < 2) return [];
+  const parseFile = async (file: File): Promise<any[]> => {
+    console.log(`Processing file: ${file.name}, type: ${file.type}`);
     
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    console.log('CSV Headers found:', headers);
-    const data = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      const row: any = {};
-      headers.forEach((header, index) => {
-        const value = values[index]?.trim() || '';
-        row[header] = value;
-      });
-      console.log(`Row ${i + 1} data:`, row);
-      data.push(row);
+    if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+      // Handle Excel files
+      console.log('Processing as Excel file');
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (jsonData.length < 2) return [];
+      
+      const headers = (jsonData[0] as string[]).map(h => h?.toString().trim().toLowerCase() || '');
+      console.log('Excel Headers found:', headers);
+      
+      const data = [];
+      for (let i = 1; i < jsonData.length; i++) {
+        const values = jsonData[i] as any[];
+        const row: any = {};
+        headers.forEach((header, index) => {
+          const value = values[index]?.toString().trim() || '';
+          row[header] = value;
+        });
+        console.log(`Excel Row ${i + 1} data:`, row);
+        data.push(row);
+      }
+      
+      return data;
+    } else {
+      // Handle CSV files
+      console.log('Processing as CSV file');
+      const text = await file.text();
+      console.log(`CSV content preview:`, text.substring(0, 200));
+      
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      console.log('CSV Headers found:', headers);
+      const data = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const row: any = {};
+        headers.forEach((header, index) => {
+          const value = values[index]?.trim() || '';
+          row[header] = value;
+        });
+        console.log(`CSV Row ${i + 1} data:`, row);
+        data.push(row);
+      }
+      
+      return data;
     }
-    
-    return data;
   };
 
   const validateNodesData = (data: any[]): Node[] => {
@@ -171,10 +207,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       console.log('Processing files:', Array.from(files).map(f => f.name));
       
       for (const file of files) {
-        console.log(`Processing file: ${file.name}`);
-        const text = await file.text();
-        console.log(`File content preview:`, text.substring(0, 200));
-        const data = parseCSV(text);
+        const data = await parseFile(file);
         
         if (file.name.toLowerCase().includes('node')) {
           console.log('Identified as nodes file');
@@ -229,7 +262,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
               <FileText className="h-5 w-5" />
               Nodes File Format
             </CardTitle>
-            <CardDescription>CSV file containing node information</CardDescription>
+            <CardDescription>CSV or Excel file containing node information</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 p-3 rounded-md text-sm font-mono">
@@ -254,7 +287,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
               <FileText className="h-5 w-5" />
               Edges File Format
             </CardTitle>
-            <CardDescription>CSV file containing connection information</CardDescription>
+            <CardDescription>CSV or Excel file containing connection information</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 p-3 rounded-md text-sm font-mono">
@@ -276,17 +309,17 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         <CardHeader>
           <CardTitle>Upload Files</CardTitle>
           <CardDescription>
-            Select both nodes and edges CSV files. Files should contain "node" and "edge" in their names.
+            Select both nodes and edges CSV or Excel files. Files should contain "node" and "edge" in their names.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="file-upload">Select CSV Files</Label>
+              <Label htmlFor="file-upload">Select CSV or Excel Files</Label>
               <Input
                 id="file-upload"
                 type="file"
-                accept=".csv,.xlsx"
+                accept=".csv,.xlsx,.xls"
                 multiple
                 onChange={handleFileUpload}
                 disabled={uploading}
@@ -295,7 +328,7 @@ const FileUpload = ({ onFileUpload }: FileUploadProps) => {
             
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <AlertCircle className="h-4 w-4" />
-              <span>Upload both nodes and edges files simultaneously</span>
+              <span>Upload both nodes and edges files simultaneously (CSV or Excel format)</span>
             </div>
             
             {uploading && (
