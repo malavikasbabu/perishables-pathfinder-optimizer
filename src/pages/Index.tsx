@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,7 @@ import DataTable from "@/components/supply-chain/DataTable";
 import NetworkVisualization from "@/components/supply-chain/NetworkVisualization";
 import OptimizationPanel from "@/components/supply-chain/OptimizationPanel";
 import FileUpload from "@/components/supply-chain/FileUpload";
+import DemoDataLoader from "@/components/supply-chain/DemoDataLoader";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Node {
@@ -68,6 +68,15 @@ const Index = () => {
     localStorage.setItem('supply-chain-edges', JSON.stringify(edges));
   }, [edges]);
 
+  const handleLoadDemo = (demoNodes: Node[], demoEdges: Edge[]) => {
+    setNodes(demoNodes);
+    setEdges(demoEdges);
+    toast({
+      title: "Demo Data Loaded",
+      description: `Loaded ${demoNodes.length} nodes and ${demoEdges.length} routes for Bengaluru.`,
+    });
+  };
+
   const handleAddNode = (node: Omit<Node, 'id'>) => {
     const newNode: Node = {
       ...node,
@@ -77,6 +86,16 @@ const Index = () => {
     toast({
       title: "Node Added",
       description: `${node.name} has been added to the network.`,
+    });
+  };
+
+  const handleUpdateNode = (nodeId: string, updates: Partial<Node>) => {
+    setNodes(prev => prev.map(node => 
+      node.id === nodeId ? { ...node, ...updates } : node
+    ));
+    toast({
+      title: "Node Updated",
+      description: "Node has been updated successfully.",
     });
   };
 
@@ -139,7 +158,7 @@ const Index = () => {
             Supply Chain Network Optimizer
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Design and optimize your perishable FMCG supply chain network for minimum cost, time, and maximum efficiency.
+            Design and optimize your perishable FMCG supply chain network in Bengaluru with interactive mapping, real-time routing, and multi-vehicle optimization.
           </p>
         </div>
 
@@ -166,6 +185,9 @@ const Index = () => {
 
           {/* Manual Entry Tab */}
           <TabsContent value="manual-entry" className="space-y-6">
+            {/* Demo Data Loader */}
+            <DemoDataLoader onLoadDemo={handleLoadDemo} />
+
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Node Entry */}
               <Card>
@@ -231,13 +253,19 @@ const Index = () => {
           <TabsContent value="visualization">
             <Card>
               <CardHeader>
-                <CardTitle>Network Visualization</CardTitle>
+                <CardTitle>Interactive Network Map</CardTitle>
                 <CardDescription>
-                  Interactive view of your supply chain network with nodes and connections.
+                  Bengaluru-focused interactive map with drag & drop nodes, real address search, and route visualization.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <NetworkVisualization nodes={nodes} edges={edges} />
+                <NetworkVisualization 
+                  nodes={nodes} 
+                  edges={edges}
+                  onAddNode={handleAddNode}
+                  onUpdateNode={handleUpdateNode}
+                  onDeleteNode={handleDeleteNode}
+                />
               </CardContent>
             </Card>
           </TabsContent>
