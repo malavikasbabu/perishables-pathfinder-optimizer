@@ -7,7 +7,8 @@ import { Node, Edge } from '@/pages/Index';
 import DraggableMarker from './DraggableMarker';
 import RouteLayer from './RouteLayer';
 import { Button } from '@/components/ui/button';
-import { MapPin, Factory, Warehouse, Store, Truck } from 'lucide-react';
+import { MapPin, Factory, Warehouse, Store, Truck, Target, Navigation } from 'lucide-react';
+import { geocodingService } from '@/services/geocoding';
 
 // Fix for default markers in React Leaflet
 delete (Icon.Default.prototype as any)._getIconUrl;
@@ -90,15 +91,33 @@ const MapContainer: React.FC<MapContainerProps> = ({
   const [newNodeType, setNewNodeType] = useState<'source' | 'intermediate' | 'customer'>('source');
   const mapRef = useRef<LeafletMap>(null);
 
-  const handleMapClick = useCallback((lat: number, lng: number) => {
+  const handleMapClick = useCallback(async (lat: number, lng: number) => {
     if (isAddingNode) {
-      const nodeName = prompt(`Enter name for new ${newNodeType} node:`);
-      if (nodeName) {
+      try {
+        // Get address for the clicked location
+        const reverseResult = await geocodingService.reverseGeocode(lat, lng);
+        const address = reverseResult?.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        // Extract a meaningful name from the address
+        const addressParts = address.split(',');
+        const nodeName = addressParts[0].trim() || `${newNodeType} Node`;
+
         onAddNode({
           name: nodeName,
           type: newNodeType,
           x: lng, // Longitude as X
           y: lat, // Latitude as Y
+          capacity: newNodeType === 'source' ? 1000 : undefined,
+          perishabilityHours: newNodeType === 'customer' ? 24 : undefined
+        });
+      } catch (error) {
+        console.error('Error getting address:', error);
+        // Fallback to coordinates
+        onAddNode({
+          name: `${newNodeType} at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+          type: newNodeType,
+          x: lng,
+          y: lat,
           capacity: newNodeType === 'source' ? 1000 : undefined,
           perishabilityHours: newNodeType === 'customer' ? 24 : undefined
         });
@@ -114,45 +133,62 @@ const MapContainer: React.FC<MapContainerProps> = ({
   return (
     <div className="relative h-full w-full">
       {/* Map Controls */}
-      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 space-y-2">
-        <div className="flex flex-col space-y-1">
-          <label className="text-xs font-medium">Add Node Type:</label>
+      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-3 space-y-3">
+        <div className="flex flex-col space-y-2">
+          <label className="text-sm font-medium">Add Node Type:</label>
           <select 
             value={newNodeType} 
             onChange={(e) => setNewNodeType(e.target.value as any)}
-            className="text-xs border rounded px-1 py-0.5"
+            className="text-sm border rounded px-2 py-1 min-w-[140px]"
           >
-            <option value="source">🏭 Source</option>
+            <option value="source">🏭 Manufacturing</option>
             <option value="intermediate">📦 Distribution</option>
-            <option value="customer">🏪 Customer</option>
+            <option value="customer">🏪 Retail</option>
           </select>
         </div>
+        
         <Button
           size="sm"
           variant={isAddingNode ? "destructive" : "default"}
           onClick={() => setIsAddingNode(!isAddingNode)}
-          className="w-full text-xs"
+          className="w-full text-sm"
         >
-          <MapPin className="h-3 w-3 mr-1" />
-          {isAddingNode ? 'Cancel' : 'Add Node'}
+          <Target className="h-4 w-4 mr-2" />
+          {isAddingNode ? 'Cancel Adding' : 'Click to Add Node'}
         </Button>
+        
+        {isAddingNode && (
+          <div className="text-xs text-gray-600 border-t pt-2">
+            <p className="font-medium">📍 Click anywhere on the map</p>
+            <p>to add a {newNodeType} node</p>
+          </div>
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="absolute top-4 right-4 z-[1000] bg-white rounded-lg shadow-lg p-3">
-        <h3 className="text-sm font-semibold mb-2">Legend</h3>
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-            <span>Sources (Manufacturing)</span>
+      {/* Enhanced Legend */}
+      <div className="absolute top-4 right-4 z-[1000] bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Navigation className="h-4 w-4" />
+          Supply Chain Network
+        </h3>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">F</div>
+            <span>Manufacturing Facilities</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs font-bold">D</div>
             <span>Distribution Centers</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-emerald-500"></div>
-            <span>Customers (Retail)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">S</div>
+            <span>Retail Stores</span>
+          </div>
+          <hr className="my-2" />
+          <div className="text-gray-600">
+            <p>• Drag nodes to reposition</p>
+            <p>• Click nodes for details</p>
+            <p>• Routes show connections</p>
           </div>
         </div>
       </div>
@@ -189,10 +225,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
         ))}
       </LeafletMapContainer>
 
-      {/* Instructions */}
+      {/* Enhanced Instructions */}
       {isAddingNode && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
-          <p className="text-sm">Click on the map to add a {newNodeType} node</p>
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg max-w-md text-center">
+          <div className="flex items-center justify-center space-x-2 mb-1">
+            <Target className="h-5 w-5" />
+            <p className="font-medium">Adding {newNodeType} node</p>
+          </div>
+          <p className="text-sm opacity-90">Click anywhere on the map to place your node</p>
         </div>
       )}
     </div>
