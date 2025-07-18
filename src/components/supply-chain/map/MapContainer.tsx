@@ -34,15 +34,26 @@ const BENGALURU_BOUNDS: [[number, number], [number, number]] = [
 
 // Custom icons for different node types
 const getNodeIcon = (type: string, color: string) => {
+  const getIconSymbol = (nodeType: string) => {
+    switch (nodeType) {
+      case 'source': return 'F'; // Factory
+      case 'intermediate': return 'D'; // Distribution
+      case 'customer': return 'S'; // Store
+      default: return 'N'; // Node
+    }
+  };
+
+  const svgString = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+      <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
+      <text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">
+        ${getIconSymbol(type)}
+      </text>
+    </svg>
+  `;
+
   return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
-        <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
-        <text x="12" y="16" text-anchor="middle" fill="white" font-size="8" font-weight="bold">
-          ${type === 'source' ? '🏭' : type === 'intermediate' ? '📦' : '🏪'}
-        </text>
-      </svg>
-    `)}`,
+    iconUrl: `data:image/svg+xml;base64,${btoa(svgString)}`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16],
