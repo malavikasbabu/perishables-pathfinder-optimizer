@@ -27,7 +27,7 @@ interface MapContainerProps {
 
 // Bengaluru city bounds
 const BENGALURU_CENTER: LatLngExpression = [12.9716, 77.5946];
-const BENGALURU_BOUNDS: [LatLngExpression, LatLngExpression] = [
+const BENGALURU_BOUNDS: [[number, number], [number, number]] = [
   [12.7342, 77.4272], // Southwest
   [13.1394, 77.7814]  // Northeast
 ];
