@@ -6,13 +6,16 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Download, Play } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, Download, Play, Truck, BarChart3, Route } from "lucide-react";
 import { Node, Edge } from "@/pages/Index";
 import { useToast } from "@/hooks/use-toast";
+import TransportOptimizer from "./TransportOptimizer";
 
 interface OptimizationPanelProps {
   nodes: Node[];
   edges: Edge[];
+  onEdgesUpdated?: (edges: Edge[]) => void;
 }
 
 interface Route {
@@ -35,7 +38,7 @@ interface OptimizationResult {
   objective: string;
 }
 
-const OptimizationPanel = ({ nodes, edges }: OptimizationPanelProps) => {
+const OptimizationPanel = ({ nodes, edges, onEdgesUpdated }: OptimizationPanelProps) => {
   const [objective, setObjective] = useState("cost");
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [result, setResult] = useState<OptimizationResult | null>(null);
@@ -268,8 +271,25 @@ const OptimizationPanel = ({ nodes, edges }: OptimizationPanelProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Optimization Settings */}
-      <Card>
+      <Tabs defaultValue="network" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="network" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Network Analysis
+          </TabsTrigger>
+          <TabsTrigger value="transport" className="flex items-center gap-2">
+            <Truck className="h-4 w-4" />
+            Transport Modes
+          </TabsTrigger>
+          <TabsTrigger value="routing" className="flex items-center gap-2">
+            <Route className="h-4 w-4" />
+            Route Optimization
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="network">
+          {/* Optimization Settings */}
+          <Card>
         <CardHeader>
           <CardTitle>Optimization Settings</CardTitle>
           <CardDescription>Choose your optimization objective</CardDescription>
@@ -391,6 +411,28 @@ const OptimizationPanel = ({ nodes, edges }: OptimizationPanelProps) => {
           </Card>
         </>
       )}
+        </TabsContent>
+
+        <TabsContent value="transport">
+          <TransportOptimizer 
+            nodes={nodes} 
+            edges={edges} 
+            onOptimizationApplied={onEdgesUpdated || (() => {})}
+          />
+        </TabsContent>
+
+        <TabsContent value="routing">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Route Optimization</CardTitle>
+              <CardDescription>Multi-objective route optimization with constraints</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Advanced routing algorithms coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

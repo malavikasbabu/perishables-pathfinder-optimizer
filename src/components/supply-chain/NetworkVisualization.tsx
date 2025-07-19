@@ -14,6 +14,7 @@ interface ExtendedNetworkVisualizationProps extends NetworkVisualizationProps {
   onAddNode?: (node: Omit<import('@/pages/Index').Node, 'id'>) => void;
   onUpdateNode?: (nodeId: string, updates: Partial<import('@/pages/Index').Node>) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onAddEdge?: (edge: Omit<import('@/pages/Index').Edge, 'id'>) => void;
 }
 
 const NetworkVisualization = ({ 
@@ -21,7 +22,8 @@ const NetworkVisualization = ({
   edges, 
   onAddNode, 
   onUpdateNode, 
-  onDeleteNode 
+  onDeleteNode,
+  onAddEdge 
 }: ExtendedNetworkVisualizationProps) => {
   const [activeTab, setActiveTab] = useState("location-picker");
   const { toast } = useToast();
@@ -84,7 +86,7 @@ const NetworkVisualization = ({
       <NetworkLegend />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="location-picker" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             Location Picker
@@ -92,6 +94,10 @@ const NetworkVisualization = ({
           <TabsTrigger value="map" className="flex items-center gap-2">
             <Map className="h-4 w-4" />
             Interactive Map
+          </TabsTrigger>
+          <TabsTrigger value="routing" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Route Calculator
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -127,6 +133,26 @@ const NetworkVisualization = ({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="routing">
+          {onAddEdge ? (
+            <div className="space-y-4">
+              {/* Placeholder for RouteCalculator - will be imported */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Route Calculator</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500">Real-world route calculation with transport modes coming soon...</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-8">
+              Route calculator requires edge creation capability
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="analytics">

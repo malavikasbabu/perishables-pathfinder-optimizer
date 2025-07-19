@@ -29,6 +29,9 @@ export interface Edge {
   distanceKm: number;
   travelTimeHr: number;
   cost: number;
+  transportMode?: 'driving-hgv' | 'driving-car' | 'cycling' | 'foot-walking';
+  routeGeometry?: Array<{ lat: number; lng: number }>;
+  instructions?: string[];
 }
 
 const Index = () => {
@@ -265,6 +268,7 @@ const Index = () => {
                   onAddNode={handleAddNode}
                   onUpdateNode={handleUpdateNode}
                   onDeleteNode={handleDeleteNode}
+                  onAddEdge={handleAddEdge}
                 />
               </CardContent>
             </Card>
@@ -280,7 +284,11 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <OptimizationPanel nodes={nodes} edges={edges} />
+                <OptimizationPanel 
+                  nodes={nodes} 
+                  edges={edges} 
+                  onEdgesUpdated={(updatedEdges) => setEdges(updatedEdges)}
+                />
               </CardContent>
             </Card>
           </TabsContent>
